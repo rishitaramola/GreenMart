@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenMart - E-Commerce Model</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .app-view { display: none; } 
+        .app-view.active { display: block; }
+        .nav-button { display: none; } 
+        .nav-button.active { background-color: #0ea5e9; color: white; font-weight: 600; }
+        .nav-button.show { display: block; } 
+        .hidden { display: none; }
+        #map { height: 400px; width: 100%; border-radius: 0.75rem; z-index: 0; margin-top: 20px; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 min-h-screen">
+
+    <div id="app-container">
+        <!-- LOGIN -->
+        <div id="view-login" class="view active max-w-lg mx-auto mt-20">
+             <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl border border-green-500/30">
+                <h2 class="text-4xl font-extrabold text-green-300 text-center mb-4">GreenMart Login</h2>
+                <div class="space-y-4">
+                    <input type="text" id="username" value="Rishita" placeholder="User ID" class="w-full px-4 py-3 bg-slate-700 rounded-lg">
+                    <input type="password" id="password" value="greenpass1" placeholder="Password" class="w-full px-4 py-3 bg-slate-700 rounded-lg">
+                </div>
+                <button id="login-button" class="w-full py-3 bg-green-600 hover:bg-green-700 font-bold rounded-lg mt-6 shadow-lg">Login</button>
+                <p class="text-center text-slate-400 mt-4">
+                    No account? <button id="show-register-btn" class="font-medium text-green-400 hover:text-green-300">Register here</button>
+                </p>
+            </div>
+        </div>
+        
+        <!-- REGISTER -->
+        <div id="view-register" class="view max-w-lg mx-auto mt-20">
+             <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl border border-blue-500/30">
+                <h2 class="text-4xl font-extrabold text-blue-300 text-center mb-4">Create Account</h2>
+                <div class="space-y-4">
+                    <input type="text" id="reg-userid" placeholder="User ID" class="w-full px-4 py-3 bg-slate-700 rounded-lg">
+                    <input type="password" id="reg-password" placeholder="Password" class="w-full px-4 py-3 bg-slate-700 rounded-lg">
+                    <input type="text" id="reg-name" placeholder="Full Name" class="w-full px-4 py-3 bg-slate-700 rounded-lg">
+                    <input type="text" id="reg-contact" placeholder="Contact (Email/Phone)" class="w-full px-4 py-3 bg-slate-700 rounded-lg">
+                    <div class="flex justify-around pt-2">
+                        <label class="flex items-center space-x-2"><input type="radio" name="userType" value="F" class="form-radio text-green-500 h-5 w-5"> <span class="text-lg">I am a Farmer</span></label>
+                        <label class="flex items-center space-x-2"><input type="radio" name="userType" value="B" class="form-radio text-yellow-500 h-5 w-5"> <span class="text-lg">I am a Buyer</span></label>
+                    </div>
+                </div>
+                <button id="register-button" class="w-full py-3 bg-blue-600 hover:bg-blue-700 font-bold rounded-lg mt-6 shadow-lg">Create Account</button>
+                <p class="text-center text-slate-400 mt-4">
+                    Already have an account? <button id="show-login-btn" class="font-medium text-green-400 hover:text-green-300">Login here</button>
+                </p>
+            </div>
+        </div>
+
+        <!-- MAIN APP -->
+        <div id="view-main-app" class="view flex">
+            <nav class="fixed left-0 top-0 w-64 h-full bg-slate-800 p-6 space-y-4 shadow-xl overflow-y-auto">
+                <div class="flex items-center space-x-2 mb-6">
+                    <h1 class="text-2xl font-bold text-green-300">GreenMart</h1>
+                </div>
+                
+                <button id="nav-cart" class="nav-button w-full text-left p-3 rounded-lg hover:bg-slate-700 transition" data-view="cart">
+                    My Cart (<span id="cart-count">0</span>)
+                </button>
+                <button id="nav-farmer" class="nav-button w-full text-left p-3 rounded-lg hover:bg-slate-700 transition" data-view="farmer">Farmer: Add Inventory</button>
+                <button id="nav-buyer" class="nav-button w-full text-left p-3 rounded-lg hover:bg-slate-700 transition" data-view="buyer">Buyer: Shop Products</button>
+                
+                <!-- Farmer Directory Button -->
+                <button id="nav-directory" class="nav-button w-full text-left p-3 rounded-lg hover:bg-slate-700 transition" data-view="directory">Farmer Directory</button>
+
+                <button id="nav-history" class="nav-button show w-full text-left p-3 rounded-lg hover:bg-slate-700 transition" data-view="history">Order History</button>
+                <button id="nav-logistics" class="nav-button show w-full text-left p-3 rounded-lg hover:bg-slate-700 transition" data-view="logistics">Logistics (Map)</button>
+
+                <div class="flex-grow"></div>
+                <div class="absolute bottom-4 border-t border-slate-700 pt-4 w-5/6">
+                    <div id="user-info" class="font-bold text-lg text-green-300"></div>
+                    <button id="logout-button" class="w-full text-left text-red-400 font-semibold hover:text-red-300 transition duration-150 mt-2">Log Out</button>
+                </div>
+            </nav>
+
+            <main class="ml-64 flex-1 p-10">
+                
+                <!-- Farmer Module -->
+                <div id="view-farmer" class="app-view">
+                    <h1 class="text-3xl font-bold mb-6">Farmer Module</h1>
+                    <div id="farmer-form-view" class="active">
+                        <div class="max-w-xl bg-slate-800 p-6 rounded-xl shadow-lg space-y-4">
+                            <input type="text" id="farm-product" placeholder="Product Name" class="w-full p-3 bg-slate-700 rounded-lg">
+                            <input type="number" id="farm-qty" placeholder="Quantity (KG)" class="w-full p-3 bg-slate-700 rounded-lg">
+                            <input type="number" id="farm-price" placeholder="Base Price per KG" class="w-full p-3 bg-slate-700 rounded-lg">
+                            <input type="date" id="farm-expiry" class="w-full p-3 bg-slate-700 rounded-lg text-slate-400">
+                            <button id="add-product-button" class="w-full py-3 bg-green-600 rounded-lg font-bold">Add Product</button>
+                            <div id="farmer-message" class="text-center mt-2"></div>
+                        </div>
+                    </div>
+                    <div id="farmer-success-view" class="hidden max-w-xl bg-slate-800 p-6 rounded-xl shadow-lg">
+                        <h2 class="text-2xl font-bold text-green-300 mb-4">Success!</h2>
+                        <p id="farmer-success-message" class="text-lg mb-6"></p>
+                        <button id="farmer-add-another-btn" class="w-full py-2 bg-green-600 rounded-lg font-bold">Add Another</button>
+                        <button id="farmer-view-inventory-btn" class="w-full py-2 bg-blue-600 rounded-lg font-bold mt-2">View My Inventory</button>
+                    </div>
+                    <h2 class="text-2xl font-bold mt-10 mb-4">My Current Inventory</h2>
+                    <div class="bg-slate-800 p-6 rounded-xl shadow-lg">
+                        <table class="w-full" id="inventory-table">
+                            <thead><tr class="text-left text-green-300"><th class="p-2">Product</th><th class="p-2">Qty</th><th class="p-2">Price</th><th class="p-2">Discounted</th><th class="p-2">Expiry</th><th class="p-2">Owner</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Buyer Module -->
+                <div id="view-buyer" class="app-view">
+                    <h1 class="text-3xl font-bold mb-6">Buyer Module</h1>
+                    <div class="space-y-3 max-w-md">
+                        <input type="text" id="shop-product" placeholder="Product Name" class="w-full p-3 bg-slate-700 rounded-lg">
+                        <input type="number" id="shop-qty" placeholder="Quantity (KG)" class="w-full p-3 bg-slate-700 rounded-lg">
+                        <button id="add-to-cart-btn" class="w-full py-2 bg-blue-600 rounded-lg font-bold">Add to Cart</button>
+                    </div>
+                </div>
+
+                <!-- Cart -->
+                <div id="view-cart" class="app-view">
+                    <h1 class="text-3xl font-bold mb-6">My Cart</h1>
+                    <div id="cart-form-view" class="active">
+                        <div class="bg-slate-800 p-6 rounded-xl max-w-2xl">
+                            <div id="cart-items-list" class="space-y-2 mb-4"></div>
+                            <button id="submit-order-btn" class="w-full py-3 bg-green-600 rounded-lg font-bold shadow-lg">Submit Order</button>
+                        </div>
+                    </div>
+                    <div id="order-success-view" class="hidden max-w-2xl bg-slate-800 p-6 rounded-xl shadow-lg">
+                         <h2 class="text-2xl font-bold text-green-300 mb-4">Order Processed!</h2>
+                         <div id="order-status-message" class="mt-4 p-4 bg-slate-900 rounded-lg font-mono"></div>
+                         <button id="buyer-add-another-btn" class="w-full py-2 bg-blue-600 rounded-lg font-bold mt-4">Shop More</button>
+                    </div>
+                </div>
+
+                <!-- Farmer Directory -->
+                <div id="view-directory" class="app-view">
+                    <h1 class="text-3xl font-bold mb-6">Farmer Directory</h1>
+                    <p class="text-slate-400 mb-4">See what each farmer is selling.</p>
+                    <button onclick="loadDirectory()" class="px-4 py-2 bg-blue-600 rounded mb-4">Refresh List</button>
+                    <div id="directory-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+                
+                <!-- History -->
+                <div id="view-history" class="app-view">
+                    <h1 class="text-3xl font-bold mb-6">Order History</h1>
+                    <button id="refresh-history-btn" class="px-5 py-2 bg-blue-600 rounded-lg font-bold mb-4">Refresh</button>
+                    <div class="bg-slate-800 p-6 rounded-xl shadow-lg">
+                        <table class="w-full" id="history-table">
+                            <thead><tr class="text-left text-yellow-300"><th class="p-2">ID</th><th class="p-2">Product</th><th class="p-2">Qty</th><th class="p-2">Status</th><th class="p-2">Action</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Logistics -->
+                <div id="view-logistics" class="app-view">
+                    <h1 class="text-3xl font-bold mb-6">Dehradun Smart Logistics</h1>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-slate-800 p-6 rounded-xl h-fit">
+                            <div class="space-y-4">
+                                <label class="text-sm text-gray-400">From</label>
+                                <select id="route-start" class="w-full p-3 bg-slate-700 rounded-lg">
+                                    <!-- Updated options to match your new JSON -->
+                                    <option value="Rishita">Rishita</option>
+                                    <option value="BuyerX">Buyer X</option>
+                                    <option value="FarmerA">Farmer A</option>
+                                    <option value="FarmerB">Farmer B</option>
+                                </select>
+                                <label class="text-sm text-gray-400">To</label>
+                                <select id="route-goal" class="w-full p-3 bg-slate-700 rounded-lg">
+                                    <option value="FarmerA">Farmer A</option>
+                                    <option value="FarmerB">Farmer B</option>
+                                    <option value="Rishita">Rishita</option>
+                                    <option value="BuyerX">Buyer X</option>
+                                </select>
+                                <button id="calc-route-btn" class="w-full py-3 bg-purple-600 hover:bg-purple-700 font-bold rounded-lg shadow-lg">Calculate Route</button>
+                            </div>
+                            <div id="route-result" class="mt-6 p-4 bg-slate-900 rounded-lg hidden">
+                                <h3 class="text-purple-300 font-bold mb-2">Route Info:</h3>
+                                <p id="route-dist" class="font-mono text-xl text-green-400"></p>
+                                <p id="route-time" class="font-mono text-lg text-blue-400"></p>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2"><div id="map"></div></div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null; 
+        let userCart = [];
+        let map, routeLine;
+        
+        // Updated Markers to match your locations.json
+        const markersData = { 
+            "Rishita": [30.316495, 78.032188], 
+            "FarmerA": [30.323, 78.041], 
+            "FarmerB": [30.311, 78.020], 
+            "BuyerX": [30.340, 78.028] 
+        };
+
+        async function apiCall(endpoint, data = {}) {
+            try { const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }); return await res.json(); } 
+            catch (e) { alert("Connection Error"); return { status: 'error', message: 'Connection error.' }; }
+        }
+
+        function navigate(viewId) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(`view-${viewId}`).classList.add('active'); }
+        function navigateApp(viewId) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${viewId}`).classList.add('active');
+            document.querySelectorAll('.nav-button.show').forEach(btn => btn.classList.remove('active'));
+            const btn = document.querySelector(`.nav-button[data-view="${viewId}"]`);
+            if (btn) btn.classList.add('active');
+            if(viewId === 'logistics') setTimeout(() => { if(map) map.invalidateSize(); else initMap(); }, 200);
+            if(viewId === 'directory') loadDirectory();
+        }
+        
+        // Auth
+        document.getElementById('login-button').addEventListener('click', async () => {
+            const u = document.getElementById('username').value, p = document.getElementById('password').value;
+            const res = await apiCall('/api/login', { username: u, password: p });
+            if (res.status === 'success') {
+                currentUser = { id: u, name: res.name, type: res.user_type };
+                document.getElementById('user-info').textContent = `${currentUser.name} (${currentUser.type})`;
+                navigate('main-app');
+                if (currentUser.type === 'F') {
+                    document.getElementById('nav-farmer').classList.add('show');
+                    document.getElementById('nav-buyer').classList.remove('show');
+                    document.getElementById('nav-cart').classList.remove('show');
+                    document.getElementById('nav-directory').classList.remove('show');
+                    navigateApp('farmer');
+                    loadInventory();
+                } else { 
+                    document.getElementById('nav-farmer').classList.remove('show');
+                    document.getElementById('nav-buyer').classList.add('show'); 
+                    document.getElementById('nav-cart').classList.add('show');
+                    document.getElementById('nav-directory').classList.add('show');
+                    navigateApp('buyer'); 
+                }
+            } else { alert(res.message); }
+        });
+        document.getElementById('show-register-btn').addEventListener('click', () => navigate('register'));
+        document.getElementById('show-login-btn').addEventListener('click', () => navigate('login'));
+        document.getElementById('logout-button').addEventListener('click', () => { currentUser = null; navigate('login'); });
+
+        // Farmer
+        document.getElementById('add-product-button').addEventListener('click', async () => {
+            const data = { farmer_id: currentUser.id, name: document.getElementById('farm-product').value, qty: document.getElementById('farm-qty').value, price: document.getElementById('farm-price').value, expiry_date: document.getElementById('farm-expiry').value };
+            const res = await apiCall('/api/addProduct', data);
+            if (res.status === 'success') {
+                document.getElementById('farmer-success-message').textContent = res.message;
+                document.getElementById('farmer-form-view').classList.add('hidden');
+                document.getElementById('farmer-success-view').classList.remove('hidden');
+                loadInventory();
+            } else { alert(res.message); }
+        });
+        document.getElementById('farmer-add-another-btn').addEventListener('click', () => { document.getElementById('farmer-form-view').classList.remove('hidden'); document.getElementById('farmer-success-view').classList.add('hidden'); });
+        document.getElementById('farmer-view-inventory-btn').addEventListener('click', () => { document.getElementById('farmer-form-view').classList.remove('hidden'); document.getElementById('farmer-success-view').classList.add('hidden'); navigateApp('farmer'); loadInventory(); });
+        
+        async function loadInventory() {
+            const res = await apiCall('/api/getInventory');
+            const tbody = document.querySelector('#inventory-table tbody'); tbody.innerHTML = "";
+            if(res.status === 'success' && res.inventory) {
+                const now = Date.now();
+                res.inventory.forEach(item => {
+                    const futureDate = new Date(now + (item.expiry * 86400000));
+                    tbody.innerHTML += `<tr class="border-t border-slate-700"><td class="p-2">${item.name}</td><td class="p-2">${item.qty} kg</td><td class="p-2">Rs. ${item.price}</td><td class="p-2">Rs. ${item.price}</td><td class="p-2">${futureDate.toLocaleDateString()}</td><td class="p-2 text-slate-400">${item.farmer_id}</td></tr>`;
+                });
+            }
+        }
+
+        // Buyer
+        document.getElementById('add-to-cart-btn').addEventListener('click', () => {
+            const p = document.getElementById('shop-product'), q = document.getElementById('shop-qty');
+            if (!p.value || q.value <= 0) { alert("Invalid input"); return; }
+            userCart.push({ product: p.value, qty: q.value });
+            updateCartView();
+            const btn = document.getElementById('add-to-cart-btn'); btn.innerText = "✓ Added!"; btn.classList.add('bg-green-600');
+            setTimeout(() => { btn.innerText = "Add to Cart"; btn.classList.remove('bg-green-600'); }, 800);
+            p.value = ""; q.value = ""; p.focus();
+        });
+        function updateCartView() { document.getElementById('cart-count').textContent = userCart.length; document.getElementById('cart-items-list').innerHTML = userCart.map((i, idx) => `<div class="flex justify-between bg-slate-700 p-2 mb-1 rounded"><span>${i.qty}kg ${i.product}</span><button onclick="userCart.splice(${idx},1);updateCartView()" class="text-red-400">X</button></div>`).join(''); }
+        document.getElementById('submit-order-btn').addEventListener('click', async () => {
+            const res = await apiCall('/api/submitOrder', { buyer_id: currentUser.id, cart_json: userCart.map(i => `${i.product},${i.qty}`).join(';') });
+            if (res.status === 'success') {
+                document.getElementById('cart-form-view').classList.add('hidden'); document.getElementById('order-success-view').classList.remove('hidden');
+                let msg = `<p class="text-green-400">Total: Rs. ${res.total_cost.toFixed(2)}</p>`;
+                res.bill.forEach(b => msg += `<p class="text-slate-300">${b.product}: ${b.message}</p>`);
+                document.getElementById('order-status-message').innerHTML = msg; userCart = []; updateCartView();
+            }
+        });
+        document.getElementById('buyer-add-another-btn').addEventListener('click', () => { document.getElementById('cart-form-view').classList.remove('hidden'); document.getElementById('order-success-view').classList.add('hidden'); navigateApp('buyer'); });
+
+        // Directory
+        async function loadDirectory() {
+            const res = await apiCall('/api/getInventory');
+            const listDiv = document.getElementById('directory-list'); listDiv.innerHTML = '<p>Loading...</p>';
+            if(res.status === 'success' && res.inventory) {
+                const farmers = {}; res.inventory.forEach(i => { if(!farmers[i.farmer_id]) farmers[i.farmer_id]=[]; farmers[i.farmer_id].push(i.name); });
+                listDiv.innerHTML = '';
+                for (const [id, prods] of Object.entries(farmers)) {
+                    listDiv.innerHTML += `<div class="bg-slate-800 p-4 rounded border border-slate-600"><h3 class="font-bold text-green-300">${id}</h3><p class="text-sm text-gray-400">Selling: ${[...new Set(prods)].join(', ')}</p></div>`;
+                }
+            }
+        }
+        
+        // History & Cancel
+        async function loadHistory() {
+            const res = await apiCall('/api/getHistory');
+            const tbody = document.querySelector('#history-table tbody'); tbody.innerHTML = "";
+            if (res.status === 'success') {
+                res.history.reverse().forEach(h => {
+                    // Allow cancel if pending. Removed user check for easy demo.
+                    let action = (h.status === 'PENDING') ? `<button onclick="cancelOrder('${h.id}')" class="bg-red-600 px-2 py-1 rounded text-xs">Cancel</button>` : '-';
+                    tbody.innerHTML += `<tr class="border-t border-slate-700"><td class="p-2 text-xs">${h.id}</td><td class="p-2">${h.product}</td><td class="p-2">${h.qty}</td><td class="p-2 ${h.status==='ALLOCATED'?'text-green-400':'text-yellow-400'} font-bold">${h.status}</td><td class="p-2">${action}</td></tr>`;
+                });
+            }
+        }
+        document.getElementById('refresh-history-btn').addEventListener('click', loadHistory);
+        async function cancelOrder(reqId) { if(confirm("Cancel this order?")) { const res = await apiCall('/api/cancelRequest', { req_id: reqId }); alert(res.message); loadHistory(); } }
+
+        // Logistics Map
+        function initMap() {
+            if(map) return;
+            // Centered around Dehradun specific to your coords
+            map = L.map('map').setView([30.3244, 78.0419], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            for (const [name, coords] of Object.entries(markersData)) { L.marker(coords).addTo(map).bindPopup(`<b>${name}</b>`); }
+        }
+        document.getElementById('calc-route-btn').addEventListener('click', async () => {
+            const start = document.getElementById('route-start').value;
+            const goal = document.getElementById('route-goal').value;
+            const res = await apiCall('/api/optimizeRouteByEntities', { buyer_id: start, farmer_id: goal });
+            document.getElementById('route-result').classList.remove('hidden');
+            if (res.status === 'success') {
+                document.getElementById('route-dist').innerText = `Distance: ${res.distance_km} km`;
+                document.getElementById('route-time').innerText = `Time: ${res.duration_min} min`;
+                if (routeLine) map.removeLayer(routeLine);
+                const latLngs = res.geometry.map(coord => [coord[1], coord[0]]);
+                routeLine = L.polyline(latLngs, {color: 'red', weight: 5}).addTo(map);
+                map.fitBounds(routeLine.getBounds());
+            } else { document.getElementById('route-dist').innerText = res.message; }
+        });
+
+        document.querySelectorAll('.nav-button').forEach(btn => btn.addEventListener('click', () => { navigateApp(btn.dataset.view); if(btn.dataset.view === 'cart') updateCartView(); if(btn.dataset.view === 'farmer') loadInventory(); if(btn.dataset.view === 'history') loadHistory(); }));
+        navigate('login');
+    </script>
+</body>
+</html>
