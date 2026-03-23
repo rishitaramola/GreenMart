@@ -1,0 +1,14 @@
+{
+  "name": "greenmart_project",
+  "version": "1.0.0",
+  "description": "C and Node.js Hybrid Project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "compile": "gcc greenmart_engine.c modules/heap.c modules/hash_table.c modules/linked_list.c modules/graph.c modules/file_io.c -o greenmart_engine"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "express": "^4.19.2"
+  }
+}
