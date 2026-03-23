@@ -1,0 +1,18 @@
+{
+  "users": {
+    "Rishita": { "lat": 30.316495, "lng": 78.032188 },
+    "FarmerA": { "lat": 30.323, "lng": 78.041 },
+    "FarmerB": { "lat": 30.311, "lng": 78.020 },
+    "BuyerX": { "lat": 30.340, "lng": 78.028 }
+  },
+
+  "buyer_nodes": {
+    "Rishita": { "lat": 30.316495, "lng": 78.032188 },
+    "BuyerX": { "lat": 30.340, "lng": 78.028 }
+  },
+
+  "farmer_nodes": {
+    "FarmerA": { "lat": 30.323, "lng": 78.041 },
+    "FarmerB": { "lat": 30.311, "lng": 78.020 }
+  }
+}
